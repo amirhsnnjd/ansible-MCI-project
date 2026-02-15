@@ -1,0 +1,87 @@
+amir@amir-VMware-Virtual-Platform:~/ansible-project$ ansible-playbook -i inventory playbook.yml
+
+PLAY [Provision WordPress with Apache and MariaDB] *********************************************************************
+
+TASK [Gathering Facts] *************************************************************************************************
+ok: [wp1]
+
+TASK [wordpress : Update apt cache] ************************************************************************************
+ok: [wp1]
+
+TASK [wordpress : Install base packages] *******************************************************************************
+ok: [wp1]
+
+TASK [wordpress : Install PHP packages] ********************************************************************************
+ok: [wp1]
+
+TASK [wordpress : Ensure services enabled and running] *****************************************************************
+ok: [wp1] => (item=apache2)
+ok: [wp1] => (item=mariadb)
+
+TASK [wordpress : Install pymysql dependency] **************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Try to set root password (may already be set)] *******************************************************
+changed: [wp1]
+
+TASK [wordpress : Create /root/.my.cnf for root login] *****************************************************************
+changed: [wp1]
+
+TASK [wordpress : Remove anonymous users] ******************************************************************************
+[WARNING]: Option column_case_sensitive is not provided. The default is now false, so the column's name will be
+uppercased. The default will be changed to true in community.mysql 4.0.0.
+ok: [wp1]
+
+TASK [wordpress : Remove test database] ********************************************************************************
+ok: [wp1]
+
+TASK [wordpress : Create WordPress database] ***************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Create WordPress database user and grant privileges] *************************************************
+changed: [wp1]
+
+TASK [wordpress : Enable Apache rewrite module] ************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Create web root directory] ***************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Deploy Apache vhost] *********************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Enable site] *****************************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Disable default site (optional)] *********************************************************************
+changed: [wp1]
+
+TASK [wordpress : Download WordPress] **********************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Unarchive WordPress to tmp] **************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Sync WordPress files to web root (idempotent)] *******************************************************
+ok: [wp1]
+
+TASK [wordpress : Generate salts if empty (set facts)] *****************************************************************
+ok: [wp1]
+
+TASK [wordpress : Deploy wp-config.php] ********************************************************************************
+changed: [wp1]
+
+TASK [wordpress : Set ownership for WordPress files] *******************************************************************
+changed: [wp1]
+
+TASK [wordpress : Ensure Apache is running] ****************************************************************************
+ok: [wp1]
+
+RUNNING HANDLER [wordpress : restart apache] ***************************************************************************
+changed: [wp1]
+
+RUNNING HANDLER [wordpress : reload apache] ****************************************************************************
+changed: [wp1]
+
+PLAY RECAP *************************************************************************************************************
+wp1                        : ok=26   changed=16   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
