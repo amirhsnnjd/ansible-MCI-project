@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: wordpress
+  author: amir
+  description: Install and configure Apache, MariaDB, and WordPress
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - focal
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
+dependencies: []

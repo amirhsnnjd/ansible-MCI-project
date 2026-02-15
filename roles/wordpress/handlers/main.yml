@@ -1,0 +1,15 @@
+---
+- name: restart apache
+  ansible.builtin.service:
+    name: "{{ apache_service_name }}"
+    state: restarted
+
+- name: restart mariadb
+  ansible.builtin.service:
+    name: "{{ mariadb_service_name }}"
+    state: restarted
+
+- name: reload apache
+  ansible.builtin.service:
+    name: "{{ apache_service_name }}"
+    state: reloaded

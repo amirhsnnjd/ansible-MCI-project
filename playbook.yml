@@ -1,0 +1,7 @@
+---
+- name: Provision WordPress with Apache and MariaDB
+  hosts: wordpress
+  become: true
+
+  roles:
+    - role: wordpress

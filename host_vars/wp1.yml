@@ -1,0 +1,18 @@
+---
+# WordPress will be served on this IP (via Apache vhost ServerName)
+wp_domain: "192.168.1.106"
+wp_server_admin: "server"
+wp_web_root: "/var/www/192.168.1.106"
+
+# Database settings
+wp_db_name: "wordpress"
+wp_db_user: "wpuser"
+wp_db_password: "Amir@0831"
+wp_db_host: "localhost"
+
+# MariaDB root
+mariadb_root_password: "Amir@0831"
+
+# PHP (optional)
+wp_php_version: "8.1"
+

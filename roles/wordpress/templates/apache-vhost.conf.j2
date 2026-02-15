@@ -1,0 +1,14 @@
+<VirtualHost *:80>
+    ServerName {{ wp_domain }}
+    ServerAdmin {{ wp_server_admin }}
+
+    DocumentRoot {{ wp_web_root }}
+
+    <Directory {{ wp_web_root }}>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/{{ wp_domain }}_error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ wp_domain }}_access.log combined
+</VirtualHost>

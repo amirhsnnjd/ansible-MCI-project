@@ -1,0 +1,55 @@
+---
+# defaults file for wordpress
+# Apache / Site
+wp_domain: "example.com"
+wp_server_admin: "admin@example.com"
+wp_web_root: "/var/www/{{ wp_domain }}"
+wp_apache_site_conf: "{{ wp_domain }}.conf"
+
+# Packages (Ubuntu/Debian)
+wp_php_packages:
+  - php
+  - php-mysql
+  - php-xml
+  - php-curl
+  - php-gd
+  - php-mbstring
+  - php-zip
+  - libapache2-mod-php
+
+
+wp_base_packages:
+  - apache2
+  - mariadb-server
+  - unzip
+  - curl
+  - rsync
+
+# WordPress download
+wp_download_url: "https://wordpress.org/latest.zip"
+wp_download_tmp: "/tmp/wordpress-latest.zip"
+
+# Database
+wp_db_name: "wordpress"
+wp_db_user: "wpuser"
+wp_db_password: "ChangeMe_StrongPassword"
+wp_db_host: "localhost"
+
+# MariaDB root handling
+mariadb_root_password: ""
+
+# Security / permissions
+wp_owner: "www-data"
+wp_group: "www-data"
+wp_dir_mode: "0755"
+wp_file_mode: "0644"
+
+# wp-config salts 
+wp_auth_key: ""
+wp_secure_auth_key: ""
+wp_logged_in_key: ""
+wp_nonce_key: ""
+wp_auth_salt: ""
+wp_secure_auth_salt: ""
+wp_logged_in_salt: ""
+wp_nonce_salt: ""

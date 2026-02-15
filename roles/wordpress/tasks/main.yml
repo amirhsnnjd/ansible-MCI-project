@@ -1,0 +1,164 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ wp_base_packages }}"
+    state: present
+
+- name: Install PHP packages
+  ansible.builtin.apt:
+    name: "{{ wp_php_packages }}"
+    state: present
+
+- name: Ensure services enabled and running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - "{{ apache_service_name }}"
+    - "{{ mariadb_service_name }}"
+
+- name: Install pymysql dependency
+  ansible.builtin.apt:
+    name: "python3-pymysql"
+    state: present
+
+# ---------- MariaDB hardening (حداقلی) ----------
+- name: Set MariaDB root password (if provided)
+  when: mariadb_root_password | length > 0
+  block:
+    - name: Try to set root password (may already be set)
+      ansible.builtin.shell: |
+        mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mariadb_root_password }}'; FLUSH PRIVILEGES;"
+      args:
+        creates: "/root/.my.cnf"
+      ignore_errors: true
+
+    - name: Create /root/.my.cnf for root login
+      ansible.builtin.copy:
+        dest: /root/.my.cnf
+        mode: "0600"
+        content: |
+          [client]
+          user=root
+          password={{ mariadb_root_password }}
+
+    - name: Remove anonymous users
+      community.mysql.mysql_user:
+        name: ''
+        host_all: true
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Remove test database
+      community.mysql.mysql_db:
+        name: test
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+# ---------- Create WP DB + User ----------
+- name: Create WordPress database
+  community.mysql.mysql_db:
+    name: "{{ wp_db_name }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create WordPress database user and grant privileges
+  community.mysql.mysql_user:
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_password }}"
+    priv: "{{ wp_db_name }}.*:ALL"
+    host: "%"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+# ---------- Apache config ----------
+- name: Enable Apache rewrite module
+  ansible.builtin.command: a2enmod rewrite
+  args:
+    creates: /etc/apache2/mods-enabled/rewrite.load
+  notify: restart apache
+
+- name: Create web root directory
+  ansible.builtin.file:
+    path: "{{ wp_web_root }}"
+    state: directory
+    owner: "{{ wp_owner }}"
+    group: "{{ wp_group }}"
+    mode: "{{ wp_dir_mode }}"
+
+- name: Deploy Apache vhost
+  ansible.builtin.template:
+    src: apache-vhost.conf.j2
+    dest: "/etc/apache2/sites-available/{{ wp_apache_site_conf }}"
+    mode: "0644"
+  notify: reload apache
+
+- name: Enable site
+  ansible.builtin.command: "a2ensite {{ wp_apache_site_conf }}"
+  args:
+    creates: "/etc/apache2/sites-enabled/{{ wp_apache_site_conf }}"
+  notify: reload apache
+
+- name: Disable default site (optional)
+  ansible.builtin.command: a2dissite 000-default.conf
+  args:
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify: reload apache
+  ignore_errors: true
+
+# ---------- WordPress install ----------
+- name: Download WordPress
+  ansible.builtin.get_url:
+    url: "{{ wp_download_url }}"
+    dest: "{{ wp_download_tmp }}"
+    mode: "0644"
+
+- name: Unarchive WordPress to tmp
+  ansible.builtin.unarchive:
+    src: "{{ wp_download_tmp }}"
+    dest: "/tmp"
+    remote_src: true
+
+- name: Sync WordPress files to web root (idempotent)
+  ansible.builtin.command: >
+    rsync -a --delete /tmp/wordpress/ {{ wp_web_root }}/
+  changed_when: false
+
+- name: Generate salts if empty (set facts)
+  ansible.builtin.set_fact:
+    wp_auth_key: "{{ (wp_auth_key | length > 0) | ternary(wp_auth_key, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_secure_auth_key: "{{ (wp_secure_auth_key | length > 0) | ternary(wp_secure_auth_key, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_logged_in_key: "{{ (wp_logged_in_key | length > 0) | ternary(wp_logged_in_key, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_nonce_key: "{{ (wp_nonce_key | length > 0) | ternary(wp_nonce_key, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_auth_salt: "{{ (wp_auth_salt | length > 0) | ternary(wp_auth_salt, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_secure_auth_salt: "{{ (wp_secure_auth_salt | length > 0) | ternary(wp_secure_auth_salt, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_logged_in_salt: "{{ (wp_logged_in_salt | length > 0) | ternary(wp_logged_in_salt, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+    wp_nonce_salt: "{{ (wp_nonce_salt | length > 0) | ternary(wp_nonce_salt, lookup('password', '/dev/null length=64 chars=ascii_letters,digits')) }}"
+
+- name: Deploy wp-config.php
+  ansible.builtin.template:
+    src: wp-config.php.j2
+    dest: "{{ wp_web_root }}/wp-config.php"
+    owner: "{{ wp_owner }}"
+    group: "{{ wp_group }}"
+    mode: "0640"
+
+- name: Set ownership for WordPress files
+  ansible.builtin.file:
+    path: "{{ wp_web_root }}"
+    state: directory
+    recurse: true
+    owner: "{{ wp_owner }}"
+    group: "{{ wp_group }}"
+
+- name: Ensure Apache is running
+  ansible.builtin.service:
+    name: "{{ apache_service_name }}"
+    state: started
+
